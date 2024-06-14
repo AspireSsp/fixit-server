@@ -1,11 +1,12 @@
 node_modules
-
+package-lock.json
 /config.env
 .env
 
 /node_modules
 /.env
 /.pnp
+/package-lock.json
 .pnp.js
 
 

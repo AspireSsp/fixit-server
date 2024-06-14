@@ -1,5 +1,7 @@
+const OTP = require("../models/otp");
 const User = require("../models/userModels")
 const bcrypt = require('bcryptjs');
+const { sendOTP } = require("../utills/twilio");
 
 exports.register = async (req, res) => {
     try {
@@ -115,3 +117,67 @@ exports.getUser = async (req, res) => {
         );
     }
 }
+
+exports.sendOtp = async (req, res) => {
+    try {   
+        const { mobile } = req.body;
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const messageSid = await sendOTP(mobile, `Your OTP is ${otp}`);
+
+        const newOtp = await OTP.findOneAndUpdate(
+            { mobile: mobile },
+            { otp: otp },
+            { upsert: true, new: true }
+        );
+
+        res.status(200).json(
+            { 
+                success : true,
+                message: "OTP sent successfully", 
+                otp
+            }
+        )
+    } catch (error) {
+        res.status(500).json(
+            { 
+                error: 'Failed to send OTP', 
+                message: error.message
+            }
+        );
+    }
+}
+
+exports.verifyOtp = async (req, res) => {
+    try {   
+        const { mobile, otp } = req.body;
+        
+        const record = await OTP.findOne({ mobile: mobile });
+
+        if (record && record.otp === otp) {
+            await OTP.deleteOne({ mobile });
+            res.status(200).json(
+                { 
+                    success : true,
+                    message: 'OTP verified successfully', 
+                }
+            )
+        } else {
+            res.status(400).json(
+                { 
+                    success : false,
+                    message: 'Invalid OTP', 
+                }
+            );
+        }   
+
+    } catch (error) {
+        res.status(500).json(
+            { 
+                error: 'Failed to verify OTP', 
+                message: error.message
+            }
+        );
+    }
+}
+
+
